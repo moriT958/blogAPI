@@ -1,4 +1,4 @@
 # Goの練習ハンズオン
 
 ## 参考
-![](https://github.com/saki-engineering/go-intermediate)
+![APIを作りながら進むGo中級者への道](https://github.com/saki-engineering/go-intermediate)
