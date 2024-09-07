@@ -11,18 +11,18 @@ const (
 	articleNumPerPage = 5
 )
 
-func InserArticle(db *sql.DB, article models.Article) (models.Article, error) {
+func InsertArticle(db *sql.DB, article models.Article) (models.Article, error) {
 	const sqlStr = `
 		INSERT INTO articles (title, contents, username, nice, created_at) VALUES
 		($1, $2, $3, 0, now())
 		RETURNING article_id
 		;
 	`
-
 	var newArticle models.Article
 	newArticle.Title, newArticle.Contents, newArticle.UserName = article.Title, article.Contents, article.UserName
 
-	if err := db.QueryRow(sqlStr, newArticle.Title, newArticle.Contents, newArticle.UserName).Scan(&newArticle); err != nil {
+	row := db.QueryRow(sqlStr, newArticle.Title, newArticle.Contents, newArticle.UserName)
+	if err := row.Scan(&newArticle.ID); err != nil {
 		return models.Article{}, err
 	}
 
