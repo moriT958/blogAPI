@@ -1,3 +1,5 @@
 /main
 
 database/data
+
+.env
