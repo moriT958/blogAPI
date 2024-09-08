@@ -1,28 +1,26 @@
-package handlers
+package controllers
 
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/moriT958/go-api/controllers/services"
 	"github.com/moriT958/go-api/models"
-	"github.com/moriT958/go-api/services"
 )
 
-// GET /helloのハンドラ
-func HelloHandler(w http.ResponseWriter, req *http.Request) {
-	//　wは、http.ResponseWriterで定義されたインターフェース型。reqをwに埋め込む形で使う。
-	// reqは、http.Request構造体のポインタ。
+type ArticleController struct {
+	service services.ArticleServicer
+}
 
-	// WriteStringはio.Writerに文字列を埋め込める。
-	io.WriteString(w, "Hello, World!!\n")
+func NewArticleController(s services.ArticleServicer) *ArticleController {
+	return &ArticleController{service: s}
 }
 
 // POST /articleのハンドラ
-func PostArticleHandler(w http.ResponseWriter, req *http.Request) {
+func (c *ArticleController) PostArticleHandler(w http.ResponseWriter, req *http.Request) {
 
 	// 1. 受け取ったJSONを一旦バイトとして読み込む
 	// リクエストヘッダからバイトの長さを得る。
@@ -61,7 +59,7 @@ func PostArticleHandler(w http.ResponseWriter, req *http.Request) {
 	// }
 	// w.Write(jsonData)
 
-	article, err := services.PostArticleService(reqArticle)
+	article, err := c.service.PostArticleService(reqArticle)
 	if err != nil {
 		http.Error(w, "fail internal exec\n", http.StatusInternalServerError)
 		return
@@ -72,7 +70,7 @@ func PostArticleHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 // GET /article/list?page= のハンドラ
-func ArticleListHandler(w http.ResponseWriter, req *http.Request) {
+func (c *ArticleController) ArticleListHandler(w http.ResponseWriter, req *http.Request) {
 	// リクエストからURLのクエリ部を得る。
 	queryMap := req.URL.Query() // Queryはマップ(url.Values)を返す
 
@@ -100,7 +98,7 @@ func ArticleListHandler(w http.ResponseWriter, req *http.Request) {
 
 	// w.Write(jsonData)
 
-	articleList, err := services.GetArticleListService(page)
+	articleList, err := c.service.GetArticleListService(page)
 	if err != nil {
 		http.Error(w, "fail internal exec\n", http.StatusInternalServerError)
 		return
@@ -115,7 +113,7 @@ func ArticleListHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 // GET /article/{id}のハンドラ
-func ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
+func (c *ArticleController) ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
 	// mux.Varsはリクエストのルートの値をマップで返す。
 	articleID, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
@@ -132,7 +130,7 @@ func ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
 
 	// w.Write(jsonData)
 
-	article, err := services.GetArticleService(articleID)
+	article, err := c.service.GetArticleService(articleID)
 	if err != nil {
 		http.Error(w, "fail internal exec\n", http.StatusInternalServerError)
 		return
@@ -147,7 +145,7 @@ func ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 // POST /article/nice のハンドラ
-func PostNiceHandler(w http.ResponseWriter, req *http.Request) {
+func (c *ArticleController) PostNiceHandler(w http.ResponseWriter, req *http.Request) {
 	var reqArticle models.Article
 	// jsonData, err := json.Marshal(article)
 	// if err != nil {
@@ -162,7 +160,7 @@ func PostNiceHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "fail to decode json\n", http.StatusBadRequest)
 	}
 
-	article, err := services.PostNiceService(reqArticle)
+	article, err := c.service.PostNiceService(reqArticle)
 	if err != nil {
 		http.Error(w, "fail internal exec\n", http.StatusInternalServerError)
 		return
@@ -170,33 +168,4 @@ func PostNiceHandler(w http.ResponseWriter, req *http.Request) {
 
 	// resArticle := article
 	json.NewEncoder(w).Encode(article)
-}
-
-// POST /comment のハンドラ
-func PostCommentHandler(w http.ResponseWriter, req *http.Request) {
-	var reqComment models.Comment
-	// comment1 := models.Comment1
-	// jsonData, err := json.Marshal(comment1)
-	// if err != nil {
-	// 	http.Error(w, "Faild to encode json", http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// w.Write(jsonData)
-
-	// 上記のリファクタ
-	if err := json.NewDecoder(req.Body).Decode(&reqComment); err != nil {
-		http.Error(w, "fail to encode json\n", http.StatusBadRequest)
-	}
-
-	comment, err := services.PostCommentService(reqComment)
-	if err != nil {
-		http.Error(w, "fail internal exec\n", http.StatusInternalServerError)
-		return
-	}
-
-	resComment := comment
-	if err := json.NewEncoder(w).Encode(resComment); err != nil {
-		http.Error(w, "fail to encode json\n", http.StatusBadRequest)
-	}
 }
