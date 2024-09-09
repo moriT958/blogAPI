@@ -76,13 +76,40 @@ func SelectArticleDetail(db *sql.DB, id int) (models.Article, error) {
 }
 
 func UpdateNiceNum(db *sql.DB, id int) error {
-	const sqlStr = `
-		update articles set nice = nice + 1 where article_id = $1;
-	`
-	_, err := db.Exec(sqlStr, id)
+
+	// トランザクションの開始
+	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
 
+	const sqlGetNice = `
+		select nice
+		from articles
+		where article_id = $1;
+	`
+	row := tx.QueryRow(sqlGetNice, id)
+	if err := row.Err(); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	var nicenum int
+	err = row.Scan(&nicenum)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	const sqlUpdateNice = `update articles set nice = $1 where article_id = $2`
+	_, err = tx.Exec(sqlUpdateNice, nicenum+1, id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
 	return nil
 }
