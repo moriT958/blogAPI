@@ -17,6 +17,8 @@ func InsertComment(db *sql.DB, comment models.Comment) (models.Comment, error) {
 	newComment.ArticleID, newComment.Message = comment.ArticleID, comment.Message
 	row := db.QueryRow(sqlStr, newComment.ArticleID, newComment.Message)
 	if err := row.Scan(&newComment.CommentID); err != nil {
+		// クエリ自体は成功したがレコードが何も帰ってこない場合にsql.ErrNoRowsが帰ってくる。
+		// クエリ自体が失敗した場合はScanの時点でエラーが返ってくる。
 		return models.Comment{}, err
 	}
 
