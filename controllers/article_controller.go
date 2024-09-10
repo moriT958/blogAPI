@@ -2,11 +2,11 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/moriT958/go-api/apperrors"
 	"github.com/moriT958/go-api/controllers/services"
 	"github.com/moriT958/go-api/models"
 )
@@ -48,7 +48,8 @@ func (c *ArticleController) PostArticleHandler(w http.ResponseWriter, req *http.
 
 	// ストリームへのリファクタ追加部
 	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil { // reqArticle構造体にストリームのデータを流し込む。
-		http.Error(w, "fail to decode json\n", http.StatusBadRequest)
+		err = apperrors.ReqBodyDecodeFailed.Wrap(err, "Bad request body")
+		apperrors.ErrorHandler(w, req, err)
 	}
 
 	// article := reqArticle
@@ -61,7 +62,7 @@ func (c *ArticleController) PostArticleHandler(w http.ResponseWriter, req *http.
 
 	article, err := c.service.PostArticleService(reqArticle)
 	if err != nil {
-		http.Error(w, "fail internal exec\n", http.StatusInternalServerError)
+		apperrors.ErrorHandler(w, req, err)
 		return
 	}
 
@@ -81,7 +82,8 @@ func (c *ArticleController) ArticleListHandler(w http.ResponseWriter, req *http.
 
 		page, err = strconv.Atoi(p[0])
 		if err != nil {
-			http.Error(w, "Invalid query parameter", http.StatusBadRequest)
+			err = apperrors.BadParam.Wrap(err, "query param must be number")
+			apperrors.ErrorHandler(w, req, err)
 			return
 		}
 	} else {
@@ -100,16 +102,12 @@ func (c *ArticleController) ArticleListHandler(w http.ResponseWriter, req *http.
 
 	articleList, err := c.service.GetArticleListService(page)
 	if err != nil {
-		http.Error(w, "fail internal exec\n", http.StatusInternalServerError)
+		apperrors.ErrorHandler(w, req, err)
 		return
 	}
 
 	// 上記のリファクタ
-	if err := json.NewEncoder(w).Encode(articleList); err != nil {
-		errMsg := fmt.Sprintf("Fail to encode json (page %d)\n", page)
-		http.Error(w, errMsg, http.StatusInternalServerError)
-		return
-	}
+	json.NewEncoder(w).Encode(articleList)
 }
 
 // GET /article/{id}のハンドラ
@@ -117,7 +115,8 @@ func (c *ArticleController) ArticleDetailHandler(w http.ResponseWriter, req *htt
 	// mux.Varsはリクエストのルートの値をマップで返す。
 	articleID, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
-		http.Error(w, "Invalid query parameter", http.StatusBadRequest)
+		err = apperrors.BadParam.Wrap(err, "path param must be number")
+		apperrors.ErrorHandler(w, req, err)
 		return
 	}
 
@@ -132,16 +131,12 @@ func (c *ArticleController) ArticleDetailHandler(w http.ResponseWriter, req *htt
 
 	article, err := c.service.GetArticleService(articleID)
 	if err != nil {
-		http.Error(w, "fail internal exec\n", http.StatusInternalServerError)
+		apperrors.ErrorHandler(w, req, err)
 		return
 	}
 
 	// 上記のリファクタ
-	if err := json.NewEncoder(w).Encode(article); err != nil {
-		errMsg := fmt.Sprintf("Fail to encode json (articleID %d)\n", articleID)
-		http.Error(w, errMsg, http.StatusInternalServerError)
-		return
-	}
+	json.NewEncoder(w).Encode(article)
 }
 
 // POST /article/nice のハンドラ
@@ -157,12 +152,13 @@ func (c *ArticleController) PostNiceHandler(w http.ResponseWriter, req *http.Req
 
 	// 上記のリファクタ
 	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
-		http.Error(w, "fail to decode json\n", http.StatusBadRequest)
+		err = apperrors.ReqBodyDecodeFailed.Wrap(err, "bad request body")
+		apperrors.ErrorHandler(w, req, err)
 	}
 
 	article, err := c.service.PostNiceService(reqArticle)
 	if err != nil {
-		http.Error(w, "fail internal exec\n", http.StatusInternalServerError)
+		apperrors.ErrorHandler(w, req, err)
 		return
 	}
 
