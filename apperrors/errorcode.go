@@ -11,6 +11,9 @@ const (
 	NAData           ErrCode = "S003"
 	NoTargetData     ErrCode = "S004"
 	UpdateDataFailed ErrCode = "S005"
+
+	ReqBodyDecodeFailed ErrCode = "R001"
+	BadParam            ErrCode = "R002"
 )
 
 // 受け取ったエラーにエラーコードを含めた形でラップする関数
