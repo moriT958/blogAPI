@@ -9,7 +9,9 @@ type MyAppError struct {
 	// (フィールド名を省略した場合、型名がそのままフィールド名になる)
 	ErrCode
 	Message string
-	Err     error // エラーの入れ子関係のことをエラーチェーンという
+
+	// エラーの入れ子関係のことをエラーチェーンという
+	Err error `json:"-"` // レスポンスには表示しない
 }
 
 // errorインターフェース型を満たすために、Errorメソッドを実装
