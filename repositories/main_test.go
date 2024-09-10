@@ -12,9 +12,9 @@ import (
 // テスト全体で共有する sql.DB 型
 var testDB *sql.DB
 var (
-	dbUser     = os.Getenv("POSTGRES_USER")
-	dbPassword = os.Getenv("POSTGRES_PASSWORD")
-	dbDatabase = os.Getenv("POSTGRES_DB")
+	dbUser     = "postgres"
+	dbPassword = "postgres"
+	dbDatabase = "mydb"
 	dbConn     = fmt.Sprintf("postgres://%s:%s@127.0.0.1:5432/%s?sslmode=disable", dbUser, dbPassword, dbDatabase)
 )
 
