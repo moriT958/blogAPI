@@ -8,7 +8,6 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/moriT958/go-api/api"
-	//"github.com/moriT958/go-api/models"
 )
 
 var (
@@ -25,46 +24,6 @@ func main() {
 	// } else {
 	// 	fmt.Println("connect to DB")
 	// }
-
-	// トランザクションの開始
-	// tx, err := db.Begin()
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
-	// // 現在のいいね数を取得するクエリを実行する
-	// article_id := 1
-	// const sqlGetNice = `
-	// 	select nice
-	// 	from articles
-	// 	where article_id = $1;
-	// `
-
-	// row := tx.QueryRow(sqlGetNice, article_id) // QueryもExecもtxのインターフェースとして用意されているので、dbと同様に使用可能。
-	// if err := row.Err(); err != nil {
-	// 	fmt.Println(err)
-	// 	tx.Rollback() // 失敗したらロールバック
-	// 	return
-	// }
-
-	// // 変数 nicenum に現在のいいね数を読み込む
-	// var nicenum int
-	// err = row.Scan(&nicenum)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	tx.Rollback()
-	// 	return
-	// }
-	// // いいね数を+1 する更新処理を行う
-	// const sqlUpdateNice = `update articles set nice = $1 where article_id = $2`
-	// _, err = tx.Exec(sqlUpdateNice, nicenum+1, article_id)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	tx.Rollback()
-	// 	return
-	// }
-	// // コミットして処理内容を確定させる
-	// tx.Commit()
 
 	db, err := sql.Open("postgres", dbConn)
 	if err != nil {

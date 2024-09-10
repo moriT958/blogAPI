@@ -25,9 +25,9 @@ func ErrorHandler(w http.ResponseWriter, req *http.Request, err error) {
 
 	// エラーコードに応じて返すエラーを分岐
 	switch appErr.ErrCode {
-	case NAData, BadParam:
+	case NAData:
 		statusCode = http.StatusNotFound
-	case NoTargetData, ReqBodyDecodeFailed:
+	case NoTargetData, ReqBodyDecodeFailed, BadParam:
 		statusCode = http.StatusBadRequest
 	default:
 		statusCode = http.StatusInternalServerError
