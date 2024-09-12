@@ -41,24 +41,61 @@ func (s *MyAppService) GetArticleListService(page int) ([]models.Article, error)
 // ArticleDetailHandlerで使うことを想定したサービス
 // 指定IDの記事情報を返却
 func (s *MyAppService) GetArticleService(articleID int) (models.Article, error) {
-	article, err := repositories.SelectArticleDetail(s.db, articleID)
-	if err != nil {
+	// チャネルで送受信できるデータは一つのみなので構造体としてまとめる
+	// articleを受信するチャネル
+	type articleResult struct {
+		article models.Article
+		err     error
+	}
+	articleChan := make(chan articleResult)
+	defer close(articleChan)
+	go func(ch chan<- articleResult) {
+		article, err := repositories.SelectArticleDetail(s.db, articleID)
+		ch <- articleResult{article: article, err: err}
+	}(articleChan)
+
+	// commentを受信するチャネル
+	type commentResult struct {
+		commentList *[]models.Comment
+		err         error
+	}
+	commentChan := make(chan commentResult)
+	defer close(commentChan)
+	go func(ch chan<- commentResult) {
+		commentList, err := repositories.SelectCommentList(s.db, articleID)
+		ch <- commentResult{commentList: &commentList, err: err}
+	}(commentChan)
+
+	var article models.Article
+	var commentList []models.Comment
+	var articleGetErr, commentGetErr error
+
+	// チャネル2つ分の走査が必要なため
+	for i := 0; i < 2; i++ {
+		select {
+		case ar := <-articleChan:
+			article, articleGetErr = ar.article, ar.err
+		case cr := <-commentChan:
+			commentList, commentGetErr = *cr.commentList, cr.err
+		}
+	}
+
+	if articleGetErr != nil {
 		// sqlドライバ側のエラーなのかScan関数で起きたエラーなのか区別するため、条件分岐する。
-		if errors.Is(err, sql.ErrNoRows) {
-			err = apperrors.NAData.Wrap(err, "No data found")
+		if errors.Is(articleGetErr, sql.ErrNoRows) {
+			err := apperrors.NAData.Wrap(articleGetErr, "No data found")
 			return models.Article{}, err
 		}
-		err = apperrors.GetDataFailed.Wrap(err, "fail to load data")
+		err := apperrors.GetDataFailed.Wrap(articleGetErr, "fail to load data")
 		return models.Article{}, err
 	}
 
-	commentList, err := repositories.SelectCommentList(s.db, articleID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) { // sqlはレコードが見つからない場合ErrNoRowsを返す。
-			err = apperrors.NAData.Wrap(err, "No data found")
+	if commentGetErr != nil {
+		if errors.Is(commentGetErr, sql.ErrNoRows) { // sqlはレコードが見つからない場合ErrNoRowsを返す。
+			err := apperrors.NAData.Wrap(commentGetErr, "No data found")
 			return models.Article{}, err
 		}
-		err = apperrors.GetDataFailed.Wrap(err, "fail to load data")
+		err := apperrors.GetDataFailed.Wrap(commentGetErr, "fail to load data")
 		return models.Article{}, err
 	}
 
