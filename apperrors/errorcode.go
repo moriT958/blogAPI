@@ -14,6 +14,12 @@ const (
 
 	ReqBodyDecodeFailed ErrCode = "R001"
 	BadParam            ErrCode = "R002"
+
+	RequiredAuthorizationHeader ErrCode = "A001"
+	CannotMakeValidator         ErrCode = "A002"
+	Unauthorizated              ErrCode = "A003"
+	NotMatchUser                ErrCode = "A004"
+	PayloadDecodeFailed         ErrCode = "A005"
 )
 
 // 受け取ったエラーにエラーコードを含めた形でラップする関数
