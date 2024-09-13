@@ -25,6 +25,7 @@ func main() {
 	// 	fmt.Println("connect to DB")
 	// }
 
+	// db接続
 	db, err := sql.Open("postgres", dbConn)
 	if err != nil {
 		log.Println("fail to connect DB")
