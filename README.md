@@ -1,4 +1,25 @@
-# Goの練習ハンズオン
+# blogAPI
 
-## 参考
-![APIを作りながら進むGo中級者への道](https://github.com/saki-engineering/go-intermediate)
+## ブログAPI
+
+- 🪶 機能
+
+  - 記事を投稿する
+  - 投稿一覧を取得する
+  - 特定の投稿を取得する
+  - 投稿にいいねをつける
+  - 投稿にコメントする
+
+## 技術スタック
+
+- ⚙️ アプリケーション
+
+  - Go (API実装)
+  - MySQL (RDBMS)
+
+- 🧑‍💻 開発ツール
+
+  - Docker (デプロイ)
+  - Github Actions (CI/CD)
+  - Docker Compose (開発環境)
+  - Goose (DBマイグレーション)
