@@ -1,4 +1,4 @@
-# blogAPI
+# 📔 blogAPI
 
 シンプルなブログアプリのREST API。記事の投稿や取得、コメント、いいね機能を備え、GoとMySQLで構築されています。
 
