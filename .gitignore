@@ -1,7 +1,3 @@
-/main
+.DS_Store
 
-database/data
-
-.env
-
-/myauth
+docker/mysql_data
