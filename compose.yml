@@ -1,14 +1,13 @@
 services:
   db:
-    image: postgres:15
-    container_name: postgres
+    image: mysql:8.0
+    container_name: mysql
     volumes:
-      - ./database/init_db:/docker-entrypoint-initdb.d
-      - ./database/data:/var/lib/postgresql/data
+      - ./docker/mysql_data:/var/lib/mysql
     ports:
-      - "5432:5432"
-    environment:  
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: mydb
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: blogdb
+      MYSQL_USER: username
+      MYSQL_PASSWORD: password
