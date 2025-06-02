@@ -3,60 +3,69 @@ package repositories
 import (
 	"database/sql"
 
-	_ "github.com/lib/pq"
 	"github.com/moriT958/go-api/models"
 )
 
-const (
-	articleNumPerPage = 5
-)
+type IArticleRepository interface {
+	Create(models.Article) (models.Article, error)
+	FindAll(int) ([]models.Article, error)
+	FindByID(int) (models.Article, error)
+	AddNice(int) error
+}
 
-func InsertArticle(db *sql.DB, article models.Article) (models.Article, error) {
-	const sqlStr = `
-		INSERT INTO articles (title, contents, username, nice, created_at) VALUES
-		($1, $2, $3, 0, now())
-		RETURNING article_id
-		;
-	`
-	var newArticle models.Article
-	newArticle.Title, newArticle.Contents, newArticle.UserName = article.Title, article.Contents, article.UserName
+var _ IArticleRepository = (*ArticleRepository)(nil)
 
-	row := db.QueryRow(sqlStr, newArticle.Title, newArticle.Contents, newArticle.UserName)
-	if err := row.Scan(&newArticle.ID); err != nil {
+type ArticleRepository struct {
+	db *sql.DB
+}
+
+func NewArticleRepository(db *sql.DB) *ArticleRepository {
+	return &ArticleRepository{
+		db: db,
+	}
+}
+
+func (r *ArticleRepository) Create(article models.Article) (models.Article, error) {
+	query := "INSERT INTO articles (title, contents, username, nice, created_at) VALUES (?, ?, ?, 0, now());"
+
+	res, err := r.db.Exec(query, article.Title, article.Contents, article.UserName)
+	if err != nil {
 		return models.Article{}, err
 	}
 
-	return newArticle, nil
+	articleID, err := res.LastInsertId()
+	if err != nil {
+		return models.Article{}, err
+	}
+	article.ID = int(articleID)
+
+	return article, nil
 }
 
-func SelectArticleList(db *sql.DB, page int) ([]models.Article, error) {
-	const sqlStr = `
-		select article_id, title, contents, username, nice from articles
-		limit $1 
-		offset $2;
-	`
+const articleNumPerPage = 5
 
-	rows, err := db.Query(sqlStr, articleNumPerPage, articleNumPerPage*(page-1))
+func (r *ArticleRepository) FindAll(page int) ([]models.Article, error) {
+	query := "SELECT id, title, contents, username, nice FROM articles LIMIT ? OFFSET ?;"
+
+	rows, err := r.db.Query(query, articleNumPerPage, articleNumPerPage*(page-1))
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	articleArray := make([]models.Article, 0)
+	var article models.Article
+	articles := make([]models.Article, 0)
 	for rows.Next() {
-		var article models.Article
 		rows.Scan(&article.ID, &article.Title, &article.Contents, &article.UserName, &article.NiceNum)
-		articleArray = append(articleArray, article)
+		articles = append(articles, article)
 	}
 
-	return articleArray, nil
+	return articles, nil
 }
 
-func SelectArticleDetail(db *sql.DB, id int) (models.Article, error) {
-	const sqlStr = `
-		select * from articles where article_id = $1;
-	`
-	row := db.QueryRow(sqlStr, id)
+func (r *ArticleRepository) FindByID(id int) (models.Article, error) {
+	query := "SELECT id, title, contents, username, nice, created_at FROM articles WHERE id = ?;"
+	row := r.db.QueryRow(query, id)
 	if err := row.Err(); err != nil {
 		return models.Article{}, err
 	}
@@ -75,34 +84,26 @@ func SelectArticleDetail(db *sql.DB, id int) (models.Article, error) {
 	return article, nil
 }
 
-func UpdateNiceNum(db *sql.DB, id int) error {
-
-	// トランザクションの開始
-	tx, err := db.Begin()
+func (r *ArticleRepository) AddNice(id int) error {
+	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	const sqlGetNice = `
-		select nice
-		from articles
-		where article_id = $1;
-	`
-	row := tx.QueryRow(sqlGetNice, id)
+	row := tx.QueryRow("SELECT nice FROM articles WHERE id = ?;", id)
 	if err := row.Err(); err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	var nicenum int
-	err = row.Scan(&nicenum)
+	var niceNum int
+	err = row.Scan(&niceNum)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	const sqlUpdateNice = `update articles set nice = $1 where article_id = $2`
-	_, err = tx.Exec(sqlUpdateNice, nicenum+1, id)
+	_, err = tx.Exec("UPDATE articles SET nice = ? WHERE id = ?;", niceNum+1, id)
 	if err != nil {
 		tx.Rollback()
 		return err

@@ -25,3 +25,15 @@ migrate-up:
 .PHONY: migrate-down
 migrate-down:
 	goose -dir ./migrations mysql "username:password@tcp(127.0.0.1:3306)/blogdb" down
+
+.PHONY: run
+run: .env
+	docker compose up -d
+
+.PHONY: shutdown
+shutdown:
+	docker compose down
+
+.PHONY: build
+build: Dockerfile
+	docker build -t blog .
