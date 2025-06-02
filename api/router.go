@@ -4,29 +4,23 @@ import (
 	"database/sql"
 	"net/http"
 
-	"github.com/gorilla/mux"
-	"github.com/moriT958/go-api/api/middlewares"
 	"github.com/moriT958/go-api/controllers"
+	"github.com/moriT958/go-api/repositories"
 	"github.com/moriT958/go-api/services"
 )
 
-func NewRouter(db *sql.DB) *mux.Router {
-	ser := services.NewMyAppService(db)
-	aCon := controllers.NewArticleController(ser)
-	cCon := controllers.NewCommentController(ser)
+func NewRouter(db *sql.DB) *http.ServeMux {
+	ar := repositories.NewArticleRepository(db)
+	cr := repositories.NewCommentRepository(db)
+	s := services.NewBlogService(ar, cr)
+	c := controllers.NewController(s)
 
-	r := mux.NewRouter()
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /article", c.PostArticleHandler)
+	mux.HandleFunc("GET /article/list", c.GetArticlesHandler)
+	mux.HandleFunc("GET /article/{id}", c.GetArticleDetailHandler)
+	mux.HandleFunc("PATCH /article/{id}", c.PatchNiceHandler)
+	mux.HandleFunc("POST /comment", c.PostCommentHandler)
 
-	// muxを使うことで,ルーティング時にメソッドを絞ることができる。
-	// mux側が内部で自動にhttp.Errorを返す。
-	r.HandleFunc("/article", aCon.PostArticleHandler).Methods(http.MethodPost)
-	r.HandleFunc("/article/list", aCon.ArticleListHandler).Methods(http.MethodGet)
-	r.HandleFunc("/article/{id:[0-9]+}", aCon.ArticleDetailHandler).Methods(http.MethodGet)
-	r.HandleFunc("/article/nice", aCon.PostNiceHandler).Methods(http.MethodPost)
-	r.HandleFunc("/comment", cCon.PostCommentHandler).Methods(http.MethodPost)
-
-	r.Use(middlewares.LoggingMiddleware)
-	r.Use(middlewares.AuthMiddleware)
-
-	return r
+	return mux
 }

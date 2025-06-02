@@ -3,42 +3,52 @@ package repositories
 import (
 	"database/sql"
 
-	_ "github.com/lib/pq"
 	"github.com/moriT958/go-api/models"
 )
 
-func InsertComment(db *sql.DB, comment models.Comment) (models.Comment, error) {
-	const sqlStr = `
-		insert into comments (article_id, message, created_at) values 
-		($1, $2, now())
-		returning comment_id;
-	`
-	var newComment models.Comment
-	newComment.ArticleID, newComment.Message = comment.ArticleID, comment.Message
-	row := db.QueryRow(sqlStr, newComment.ArticleID, newComment.Message)
-	if err := row.Scan(&newComment.CommentID); err != nil {
-		// クエリ自体は成功したがレコードが何も帰ってこない場合にsql.ErrNoRowsが帰ってくる。
-		// クエリ自体が失敗した場合はScanの時点でエラーが返ってくる。
+type ICommentRepositoy interface {
+	Create(models.Comment) (models.Comment, error)
+	FindAll(int) ([]models.Comment, error)
+}
+
+type CommentRepository struct {
+	db *sql.DB
+}
+
+func NewCommentRepository(db *sql.DB) *CommentRepository {
+	return &CommentRepository{
+		db: db,
+	}
+}
+
+func (r *CommentRepository) Create(comment models.Comment) (models.Comment, error) {
+	query := "INSERT INTO comments (article_id, message, created_at) VALUES (?, ?, now());"
+
+	res, err := r.db.Exec(query, comment.ArticleID, comment.Message)
+	if err != nil {
 		return models.Comment{}, err
 	}
 
-	return newComment, nil
+	commentID, err := res.LastInsertId()
+	if err != nil {
+		return models.Comment{}, err
+	}
+	comment.CommentID = int(commentID)
+
+	return comment, nil
 }
 
-func SelectCommentList(db *sql.DB, articleID int) ([]models.Comment, error) {
-	const sqlStr = `select * from comments where article_id = $1;`
-
-	rows, err := db.Query(sqlStr, articleID)
+func (r *CommentRepository) FindAll(articleID int) ([]models.Comment, error) {
+	rows, err := r.db.Query("SELECT * FROM comments WHERE article_id = ?;", articleID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	commentArray := make([]models.Comment, 0)
+	var comment models.Comment
+	comments := make([]models.Comment, 0)
 	for rows.Next() {
-		var comment models.Comment
 		var createdTime sql.NullTime
-
 		if err := rows.Scan(&comment.CommentID, &comment.ArticleID, &comment.Message, &createdTime); err != nil {
 			return nil, err
 		}
@@ -47,8 +57,8 @@ func SelectCommentList(db *sql.DB, articleID int) ([]models.Comment, error) {
 			comment.CreatedAt = createdTime.Time
 		}
 
-		commentArray = append(commentArray, comment)
+		comments = append(comments, comment)
 	}
 
-	return commentArray, nil
+	return comments, nil
 }

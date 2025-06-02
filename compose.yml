@@ -11,3 +11,11 @@ services:
       MYSQL_DATABASE: blogdb
       MYSQL_USER: username
       MYSQL_PASSWORD: password
+  app:
+    build: .
+    image: blog
+    container_name: api
+    ports:
+      - "8080:8080"
+    env_file:
+        - ".env"
